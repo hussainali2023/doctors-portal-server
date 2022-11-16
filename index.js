@@ -25,6 +25,7 @@ async function run() {
     const bookingsCollection = client
       .db("doctorsPortal")
       .collection("bookings");
+    const usersCollection = client.db("doctorsPortal").collection("users");
 
     // Use Aggregate to query multiple collection and then merge data
     app.get("/appointmentOptions", async (req, res) => {
@@ -52,52 +53,52 @@ async function run() {
       res.send(options);
     });
 
-    app.get("/v2/appointmentOptions", async (req, res) => {
-      const date = req.query.date;
-      const options = await appointmentOptionCollection
-        .aggregate([
-          {
-            $lookup: {
-              from: "bookings",
-              localField: "name",
-              foreignField: "treatment",
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $eq: ["$appointmentDate", date],
-                    },
-                  },
-                },
-              ],
-              as: "booked",
-            },
-          },
-          {
-            $project: {
-              name: 1,
-              slots: 1,
-              booked: {
-                $map: {
-                  input: "$booked",
-                  as: "book",
-                  in: "$$book.slot",
-                },
-              },
-            },
-          },
-          {
-            $project: {
-              name: 1,
-              slots: {
-                $setDifference: ["$slots", "$booked"],
-              },
-            },
-          },
-        ])
-        .toArray();
-      res.send(options);
-    });
+    // app.get("/v2/appointmentOptions", async (req, res) => {
+    //   const date = req.query.date;
+    //   const options = await appointmentOptionCollection
+    //     .aggregate([
+    //       {
+    //         $lookup: {
+    //           from: "bookings",
+    //           localField: "name",
+    //           foreignField: "treatment",
+    //           pipeline: [
+    //             {
+    //               $match: {
+    //                 $expr: {
+    //                   $eq: ["$appointmentDate", date],
+    //                 },
+    //               },
+    //             },
+    //           ],
+    //           as: "booked",
+    //         },
+    //       },
+    //       {
+    //         $project: {
+    //           name: 1,
+    //           slots: 1,
+    //           booked: {
+    //             $map: {
+    //               input: "$booked",
+    //               as: "book",
+    //               in: "$$book.slot",
+    //             },
+    //           },
+    //         },
+    //       },
+    //       {
+    //         $project: {
+    //           name: 1,
+    //           slots: {
+    //             $setDifference: ["$slots", "$booked"],
+    //           },
+    //         },
+    //       },
+    //     ])
+    //     .toArray();
+    //   res.send(options);
+    // });
 
     /***
      * API Naming Convention
@@ -134,7 +135,14 @@ async function run() {
       const result = await bookingsCollection.insertOne(booking);
       res.send(result);
     });
-  } finally {
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+  } catch (error) {
+    console.log(error);
   }
 }
 run().catch(console.log);
