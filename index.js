@@ -234,6 +234,12 @@ async function run() {
       const result = await doctorsCollection.insertOne(doctor);
       res.send(result);
     });
+
+    app.get("/doctors", async (req, res) => {
+      const query = {};
+      const doctors = await doctorsCollection.find(query).toArray();
+      res.send(doctors);
+    });
   } catch (error) {
     console.log(error);
   }
